@@ -1,4 +1,4 @@
-const apiaiApp = require('apiai')('40db44ec5f964c57a1b03a3bd9d637e5');
+const apiaiApp = require('apiai')(process.env.AI_TOKEN);
 const Discord = require('discord.js');
 const client = new Discord.Client();
 const botId = '615996099416817704';
