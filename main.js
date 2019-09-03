@@ -1,17 +1,18 @@
+require('dotenv').config();
 const apiaiApp = require('apiai')(process.env.AI_TOKEN);
 const Discord = require('discord.js');
 const client = new Discord.Client();
 const botId = '615996099416817704';
 client.on('ready', function (evt) {
-    console.log(evt, 'Connected');
+    console.log(`Ready to serve on ${client.guilds.size} servers, for ${client.users.size} users.`);
+    client.user.setActivity('Female Replacement Intelligent Digital Assistant Youth');
 });
 
-require('dotenv').config()
 const timediff = require('timediff');
 const getTimeDiffAndTimeZone = require('city-country-timezone');
 
 
-const prefixes = [`<@${botId}> `, '/', 'friday', 'ok friday', 'hey friday'];
+const prefixes = [`<@${botId}> `, process.env.prefix, 'friday', 'ok friday', 'hey friday'];
 const formatDate = function(d) {
     minutes = d.getMinutes().toString().length == 1 ? '0'+d.getMinutes() : d.getMinutes(),
     hours = d.getHours().toString().length == 1 ? '0'+d.getHours() : d.getHours(),
@@ -37,7 +38,7 @@ client.on('message', message => {
         if (message.content.toLowerCase().startsWith(i)) prefix = i;
     }
     if (message.content.toLowerCase().indexOf(prefix) !== 0 && message.channel.type !== 'dm') return;
-    if (prefix == '/') {
+    if (prefix == process.env.PREFIX) {
         if (message.author.id === '359988404316012547') {
             try {
                 let args = message.content.slice(prefix.length).trim().split(/ +/g),
@@ -58,7 +59,6 @@ try {
         contexts: contexts
     });
     request.on('response', (response) => {
-        console.log(response);
         message.channel.stopTyping();
         let args = response.result.parameters, text = response.result.fulfillment.speech, res = '';
         if (text == 'code') {
