@@ -2,7 +2,6 @@ require('dotenv').config();
 const apiaiApp = require('apiai')(process.env.AI_TOKEN);
 const Discord = require('discord.js');
 const client = new Discord.Client();
-const botId = '615996099416817704';
 client.on('ready', function (evt) {
     console.log(`Ready to serve on ${client.guilds.size} servers, for ${client.users.size} users.`);
     client.user.setActivity('Female Replacement Intelligent Digital Assistant Youth');
@@ -12,13 +11,12 @@ const timediff = require('timediff');
 const getTimeDiffAndTimeZone = require('city-country-timezone');
 
 
-const prefixes = [`<@${botId}> `, process.env.prefix, 'friday', 'ok friday', 'hey friday'];
 const formatDate = function(d) {
     minutes = d.getMinutes().toString().length == 1 ? '0'+d.getMinutes() : d.getMinutes(),
     hours = d.getHours().toString().length == 1 ? '0'+d.getHours() : d.getHours(),
     ampm = d.getHours() >= 12 ? 'PM' : 'AM',
     months = ['January','February','March','April','May','June','July','August','September','October','November','December'],
-    days = ['Sunday','Monday','Tuesday','Wednesdar','Thursday','Fridar','Saturday'];
+    days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Fridar','Saturday'];
     return {
         day: days[d.getDay()],
         month: months[d.getMonth()],
@@ -32,6 +30,7 @@ const formatDate = function(d) {
 
 let contexts = [];
 client.on('message', message => {
+    const prefixes = [`<@${client.user.id}> `, process.env.prefix, 'friday', 'ok friday', 'hey friday'];
     if (message.author.bot) return;
     let prefix = false;
     for (const i of prefixes) {
@@ -63,13 +62,18 @@ try {
         let args = response.result.parameters, text = response.result.fulfillment.speech, res = '';
         if (text == 'code') {
             let a = function(q, value) {
-                if (response.result.metadata.intentName === q) {
-                    res = typeof value === 'function' ? value() : value;
+                if (typeof q != 'object') q = [q];
+                console.log(q);
+                for (let i = 0; i < q.length; i ++) {
+                    if (response.result.metadata.intentName == q[i]) {
+                        res = typeof value == 'function' ? value() : value;
+                    }
                 }
             };
             a('date.between', function() {return timediff(args.date1, args.date2, args.unit[0].toUpperCase())[args.unit+'s']+` ${args.unit}s`});
-            a('date.check', function() {
-                const { timezone, time_diff } = getTimeDiffAndTimeZone(args.location);
+            a(['date.check', 'date.check - context:date-check'], function() {
+                const location = typeof args.location == 'string' ? args.location : args.location.country;
+                const { timezone, time_diff } = getTimeDiffAndTimeZone(location);
                 let time = new Date();
                 let tzDifference = time_diff * 60;
                 let t = formatDate(new Date(time.getTime() + tzDifference * 60 * 1000));
@@ -79,27 +83,12 @@ try {
                 });
                 return {embed: {
                     color: 0xff6300,
-                    title: `Time in ${args.location}`,
+                    title: `Time in ${location}`,
                     fields: [{
                         name: `${t.hours}:${t.minutes} ${t.ampm}`,
                         value: `${t.day}, ${t.month} ${t.date}, ${t.year}`
                     }]
                 }};
-            });
-            a('date.check - context:date-check', function() {
-                const { timezone, time_diff } = getTimeDiffAndTimeZone(args.location);
-                // let time = new Date();
-                // let tzDifference = time_diff * 60;
-                // let t = formatDate(new Date(time.getTime() + tzDifference * 60 * 1000));
-                // contexts = [];
-                // return {embed: {
-                //     color: 0xff6300,
-                //     title: `Time in ${args.location}`,
-                //     fields: [{
-                //         name: `${t.hours}:${t.minutes} ${t.ampm}`,
-                //         value: `${t.day}, ${t.month} ${t.date}, ${t.year}`
-                //     }]
-                // }};
             });
         } else res = text;
         message.channel.send(res);
