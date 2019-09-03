@@ -28,6 +28,9 @@
     "city-country-timezone": "^1.0.3",
     "discord.js": "^11.3.0",
     "dotenv": "^8.1.0",
+    "request": "^2.88.0",
+    "sync-glitch-cli": "^2.0.1",
     "timediff": "^1.1.1"
-  }
+  },
+  "devDependencies": {}
 }
