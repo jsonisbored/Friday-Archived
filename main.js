@@ -11,20 +11,21 @@ client.on('ready', function (evt) {
 });
 
 const timediff = require('timediff');
-const getTimeDiffAndTimeZone = require('city-country-timezone');
+const tz = require('timezone-id');
+const { listTimeZones, findTimeZone, getZonedTime, getUnixTime } = require('timezone-support');
 
 
 const formatDate = function(d) {
-    minutes = d.getMinutes().toString().length == 1 ? '0'+d.getMinutes() : d.getMinutes(),
-    hours = d.getHours().toString().length == 1 ? '0'+d.getHours() : d.getHours(),
-    ampm = d.getHours() >= 12 ? 'PM' : 'AM',
+    minutes = d.minutes.toString().length == 1 ? '0'+d.minutes : d.minutes,
+    hours = d.hours.toString().length == 1 ? '0'+d.hours : d.hours,
+    ampm = d.hours >= 12 ? 'PM' : 'AM',
     months = ['January','February','March','April','May','June','July','August','September','October','November','December'],
-    days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Fridar','Saturday'];
+    days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
     return {
-        day: days[d.getDay()],
-        month: months[d.getMonth()],
-        date: d.getDate(),
-        year: d.getFullYear(),
+        day: days[d.day],
+        month: months[d.month],
+        date: d.dayOfWeek,
+        year: d.year,
         hours: hours%12,
         minutes: minutes,
         ampm: ampm
@@ -60,13 +61,12 @@ try {
         sessionId: message.author.id,
         contexts: contexts
     });
-    request.on('response', (response) => {
+    request.on('response', async response => {
         message.channel.stopTyping();
         let args = response.result.parameters, text = response.result.fulfillment.speech, res = '';
         if (text == 'code') {
-            let a = function(q, value) {
+            let a = async function(q, value) {
                 if (typeof q != 'object') q = [q];
-                console.log(q);
                 for (let i = 0; i < q.length; i ++) {
                     if (response.result.metadata.intentName == q[i]) {
                         res = typeof value == 'function' ? value() : value;
@@ -74,12 +74,11 @@ try {
                 }
             };
             a('date.between', function() {return timediff(args.date1, args.date2, args.unit[0].toUpperCase())[args.unit+'s']+` ${args.unit}s`});
-            a(['date.check', 'date.check - context:date-check', 'date.day_of_week'], function() {
-                const location = typeof args.location == 'string' ? args.location : args.location.country;
-                const { timezone, time_diff } = getTimeDiffAndTimeZone(location);
-                let time = new Date();
-                let tzDifference = time_diff * 60;
-                let t = formatDate(new Date(time.getTime() + tzDifference * 60 * 1000));
+            a(['date.check', 'date.check - context:date-check', 'date.day_of_week'], async function() {
+                const location = typeof args.location == 'string' ? args.location : args.location.country || args.location.city;
+                const id = await tz.getTimeZone(location);
+                const zone = findTimeZone(id);
+                const t = formatDate(getZonedTime(new Date(), zone));
                 contexts.push({
                     name: 'date.check',
                     parameters: args
@@ -94,7 +93,7 @@ try {
                 }};
             });
         } else res = text;
-        message.channel.send(res);
+        message.channel.send(await res);
     });
     request.on('error', (e) => {
         message.channel.stopTyping();

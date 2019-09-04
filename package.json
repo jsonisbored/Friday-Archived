@@ -34,7 +34,9 @@
     "pm2": "^3.5.1",
     "request": "^2.88.0",
     "sync-glitch-cli": "^2.0.1",
-    "timediff": "^1.1.1"
+    "timediff": "^1.1.1",
+    "timezone-id": "^1.0.13",
+    "timezone-support": "^2.0.2"
   },
   "devDependencies": {}
 }
