@@ -16,7 +16,7 @@ const { listTimeZones, findTimeZone, getZonedTime, getUnixTime } = require('time
 
 
 const formatDate = function(d) {
-    minutes = d.minutes.toString().length == 1 ? '0'+d.minutes : d.minutes,
+    const minutes = d.minutes.toString().length == 1 ? '0'+d.minutes : d.minutes,
     hours = d.hours.toString().length == 1 ? '0'+d.hours : d.hours,
     ampm = d.hours >= 12 ? 'PM' : 'AM',
     months = ['January','February','March','April','May','June','July','August','September','October','November','December'],
