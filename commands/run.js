@@ -1,5 +1,5 @@
 const cmd = require('node-cmd');
-module.exports = (client, message, ...args) => {
+module.exports = (client, message, args) => {
     cmd.get(
         args.join(' '),
         function(err, data, stderr){
