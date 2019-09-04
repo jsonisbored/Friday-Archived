@@ -6,8 +6,8 @@ const id = require('./restart.json');
 client.on('ready', function (evt) {
     console.log(`Ready to serve on ${client.guilds.size} servers, for ${client.users.size} users.`);
     client.user.setActivity('Female Replacement Intelligent Digital Assistant Youth');
-    // client.channels[id.id].send("Restarted!");
-    client.channels.find(x => x.id === id.id).send('Restarted!');
+    if (id.id == '618571488697647127') client.users.get('359988404316012547').send('Restarted!');
+    else client.channels.find(x => x.id === id.id).send('Restarted!');
 });
 
 const timediff = require('timediff');
