@@ -34,7 +34,7 @@ const formatDate = function(d) {
 
 let contexts = [];
 client.on('message', message => {
-    const prefixes = [`<@${client.user.id}> `, process.env.prefix, 'friday', 'ok friday', 'hey friday'];
+    const prefixes = [`<@${client.user.id}> `, process.env.PREFIX, 'friday', 'ok friday', 'hey friday'];
     if (message.author.bot) return;
     let prefix = false;
     for (const i of prefixes) {
