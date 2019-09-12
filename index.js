@@ -4,6 +4,7 @@ Discord = require('discord.js'),
 Enmap = require("enmap"),
 client = new Discord.Client(),
 id = require('./restart.json'),
+embedColor = parseInt(process.env.COLOR, 16),
 
 alarms = new Enmap({
     name: "alarms",
@@ -20,8 +21,7 @@ client.on('ready', function(evt) {
 
 
 const timediff = require('timediff'),
-tz = require('timezone-id'),
-wtn = require('words-to-numbers').default;
+tz = require('timezone-id');
 const { listTimeZones, findTimeZone, getZonedTime, getUnixTime } = require('timezone-support'),
 
 formatDate = function(d) {
@@ -133,7 +133,7 @@ client.on('message', message => {
             a('date.between', () => {
                 const d1 = formatDate(new Date(args.date1)), d2 = formatDate(new Date(args.date2));
                 return {embed: {
-                    color: parseInt(process.env.COLOR, 16),
+                    color: embedColor,
                     fields: [{
                         name: timediff(args.date1, args.date2, args.unit[0].toUpperCase())[args.unit+'s']+` ${args.unit}s`,
                         value: `${d1.month} ${d1.date}, ${d1.year} - ${d2.month} ${d2.date}, ${d2.year}`
@@ -147,7 +147,7 @@ client.on('message', message => {
                 d = getZonedTime(new Date(), zone),
                 t = formatDate(new Date(d.year, d.month, d.day, d.hours, d.minutes, d.seconds));
                 return {embed: {
-                    color: parseInt(process.env.COLOR, 16),
+                    color: embedColor,
                     title: `Time in ${location}`,
                     fields: [{
                         name: `${t.hours}:${t.minutes} ${t.ampm}`,
@@ -160,7 +160,7 @@ client.on('message', message => {
                 if (!h) return `Unkown holiday, ${args.holiday}.`;
                 const t = formatDate(h);
                 return {embed: {
-                    color: parseInt(process.env.COLOR, 16),
+                    color: embedColor,
                     fields: [{
                         name: `${t.day}, ${t.month} ${t.date}`,
                         value: `${args.holiday} ${t.year}`
@@ -178,7 +178,7 @@ client.on('message', message => {
                 }
                 let d1 = formatDate(h1), d2 = formatDate(h2);
                 return {embed: {
-                    color: parseInt(process.env.COLOR, 16),
+                    color: embedColor,
                     fields: [{
                         name: Math.abs(timediff(h1, h2, args.unit[0].toUpperCase())[args.unit+'s'])+` ${args.unit}s`,
                         value: `${d1.month} ${d1.date}, ${d1.year} - ${d2.month} ${d2.date}, ${d2.year}`
@@ -194,7 +194,7 @@ client.on('message', message => {
                 }
                 let d1 = formatDate(h1), d2 = formatDate(h2);
                 return {embed: {
-                    color: parseInt(process.env.COLOR, 16),
+                    color: embedColor,
                     fields: [{
                         name: `${Math.abs(timediff(h2, h1, args.unit[0].toUpperCase())[args.unit+'s'])} ${args.unit}s`,
                         value: `${d1.month} ${d1.date}, ${d1.year} - ${d2.month} ${d2.date}, ${d2.year}`
@@ -210,7 +210,7 @@ client.on('message', message => {
                 }
                 let d1 = formatDate(h2), d2 = formatDate(h1);
                 return {embed: {
-                    color: parseInt(process.env.COLOR, 16),
+                    color: embedColor,
                     fields: [{
                         name: `${Math.abs(timediff(h2, h1, args.unit[0].toUpperCase())[args.unit+'s'])+1} ${args.unit}s`,
                         value: `${d1.month} ${d1.date}, ${d1.year} - ${d2.month} ${d2.date}, ${d2.year}`
@@ -225,7 +225,7 @@ client.on('message', message => {
                 }
                 let d1 = formatDate(h1), d2 = formatDate(h2);
                 return {embed: {
-                    color: parseInt(process.env.COLOR, 16),
+                    color: embedColor,
                     fields: [{
                         name: `${Math.abs(timediff(h1, h2, args.unit[0].toUpperCase())[args.unit+'s'])} ${args.unit}s`,
                         value: `${d1.month} ${d1.date+1}, ${d1.year} - ${d2.month} ${d2.date}, ${d2.year}`
@@ -241,7 +241,7 @@ client.on('message', message => {
                 }
                 let d1 = formatDate(h2), d2 = formatDate(h1);
                 return {embed: {
-                    color: parseInt(process.env.COLOR, 16),
+                    color: embedColor,
                     fields: [{
                         name: `${Math.abs(timediff(h1, h2, args.unit[0].toUpperCase())[args.unit+'s'])} ${args.unit}s`,
                         value: `${d1.month} ${d1.date}, ${d1.year} - ${d2.month} ${d2.date}, ${d2.year}`
@@ -250,10 +250,10 @@ client.on('message', message => {
             });
             a('alarm.set', () => {
                 alarms.set(message.author.id, args);
+                message.channel.send('Created new alarm');
                 return {
-                    content: `Created a new Alarm.`,
                     embed: {
-                        color: parseInt(process.env.COLOR, 16),
+                        color: embedColor,
                         fields: [{
                             name: args.alarmName+'' || 'Alarm',
                             value: args.time+''
