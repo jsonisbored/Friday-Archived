@@ -3,24 +3,26 @@ const apiaiApp = require('apiai')(process.env.AI_TOKEN),
 Discord = require('discord.js'),
 Enmap = require("enmap"),
 client = new Discord.Client(),
-id = require('./restart.json');
-client.settings = new Enmap({
-    name: "settings",
+id = require('./restart.json'),
+
+alarms = new Enmap({
+    name: "alarms",
     fetchAll: false,
     autoFetch: true,
     cloneLevel: 'deep'
 });
-client.on('ready', function (evt) {
+client.on('ready', function(evt) {
     console.log(`Ready to serve on ${client.guilds.size} servers, for ${client.users.size} users.`);
     client.user.setActivity('Female Replacement Intelligent Digital Assistant Youth');
-    if (id.id == '618571488697647127') client.users.get('359988404316012547').send('Restarted!');
+    if (id.type == 'dm') client.users.get(id.id).send('Restarted!');
     else client.channels.find(x => x.id === id.id).send('Restarted!');
 });
 
 
 const timediff = require('timediff'),
 tz = require('timezone-id'),
-{ listTimeZones, findTimeZone, getZonedTime, getUnixTime } = require('timezone-support'),
+wtn = require('words-to-numbers').default;
+const { listTimeZones, findTimeZone, getZonedTime, getUnixTime } = require('timezone-support'),
 
 formatDate = function(d) {
     const minutes = d.getMinutes().toString().length == 1 ? '0'+d.getMinutes() : d.getMinutes(),
@@ -87,7 +89,7 @@ getHoliday = function(args, holiday, year) {
 };
 
 
-let contexts = [];
+let contexts = [{name: '', parameters: {}}];
 client.on('message', message => {
     const prefixes = [`<@${client.user.id}> `, process.env.PREFIX, 'friday', 'ok friday', 'hey friday'];
     if (message.author.bot) return;
@@ -96,7 +98,7 @@ client.on('message', message => {
         if (message.content.toLowerCase().startsWith(i)) prefix = i;
     }
     if (prefix == process.env.PREFIX) {
-        if (message.author.id === '359988404316012547') {
+        if (~['621491278785282059', '359988404316012547'].indexOf(message.author.id)) {
             try {
                 let args = message.content.slice(prefix.length).trim().split(/ +/g),
                 command = args.shift().toLowerCase(),
@@ -117,14 +119,9 @@ client.on('message', message => {
         contexts: contexts
     });
     request.on('response', async response => {
-        contexts.push({
-            name: response.result.action,
-            parameters: response.result.parameters
-        });
-        console.log(response);
         message.channel.stopTyping();
-        let args = response.result.parameters, text = response.result.fulfillment.speech, res = '';
-        if (text == 'code') {
+        let args = response.result.parameters, txt = response.result.fulfillment.speech, res = '';
+        if (txt == 'code') {
             let a = async function(q, value) {
                 if (typeof q != 'object') q = [q];
                 for (let i = 0; i < q.length; i ++) {
@@ -133,7 +130,7 @@ client.on('message', message => {
                     }
                 }
             };
-            a('date.between', function() {
+            a('date.between', () => {
                 const d1 = formatDate(new Date(args.date1)), d2 = formatDate(new Date(args.date2));
                 return {embed: {
                     color: parseInt(process.env.COLOR, 16),
@@ -143,7 +140,7 @@ client.on('message', message => {
                     }]
                 }};
             });
-            a(['date.check', 'date.day_of_week', 'date.day_of_week.check', 'date.get', 'date.month.check', 'date.month.get', 'date.year.check', 'date.year.get', 'time.time_zones', 'time.get', 'time.check'], async function(q) {
+            a(['date.check', 'date.day_of_week', 'date.day_of_week.check', 'date.get', 'date.month.check', 'date.month.get', 'date.year.check', 'date.year.get', 'time.time_zones', 'time.get', 'time.check'], async () => {
                 const location = typeof args.location != 'object' ? (args.location || 'Chicago') : (args.location.country || args.location.city || 'Chicago'),
                 id = await tz.getTimeZone(location),
                 zone = findTimeZone(id),
@@ -158,7 +155,7 @@ client.on('message', message => {
                     }]
                 }};
             });
-            a(['date.holiday', 'date.holiday.check'], function() {
+            a(['date.holiday', 'date.holiday.check'], () => {
                 const h = getHoliday(args, args.holiday);
                 if (!h) return `Unkown holiday, ${args.holiday}.`;
                 const t = formatDate(h);
@@ -170,7 +167,7 @@ client.on('message', message => {
                     }]
                 }};
             });
-            a('date.holiday.between', function() {
+            a('date.holiday.between', () => {
                 const h1 = getHoliday(args, args.holiday1),
                 h2 = getHoliday(args, args.holiday2);
                 if (!h1 || !h2) return `Unkown holiday, ${!h1 ? args.holiday1 : args.holiday2}.`;
@@ -188,7 +185,7 @@ client.on('message', message => {
                     }]
                 }};
             });
-            a('date.holiday.since', function() {
+            a('date.holiday.since', () => {
                 let h1 = getHoliday(args, args.holiday),
                 h2 = new Date();
                 if (!h1) return `Unkown holiday, ${args.holiday1}.`;
@@ -204,7 +201,7 @@ client.on('message', message => {
                     }]
                 }};
             });
-            a('date.holiday.until', function() {
+            a('date.holiday.until', () => {
                 let h1 = getHoliday(args, args.holiday),
                 h2 = new Date();
                 if (!h1) return `Unkown holiday, ${args.holiday1}.`;
@@ -220,7 +217,7 @@ client.on('message', message => {
                     }]
                 }};
             });
-            a('date.since', function() {
+            a('date.since', () => {
                 let h1 = new Date(args.date),
                 h2 = new Date();
                 if (h1.getTime() > h2.getTime()) {
@@ -235,7 +232,7 @@ client.on('message', message => {
                     }]
                 }};
             });
-            a('date.until', function() {
+            a('date.until', () => {
                 let h1 = new Date(args.date),
                 h2 = new Date();
                 h1.setDate(h1.getDate()+1);
@@ -251,16 +248,32 @@ client.on('message', message => {
                     }]
                 }};
             });
-            a('alarm.set', function() {});
+            a('alarm.set', () => {
+                alarms.set(message.author.id, args);
+                return {
+                    content: `Created a new Alarm.`,
+                    embed: {
+                        color: parseInt(process.env.COLOR, 16),
+                        fields: [{
+                            name: args.alarmName+'' || 'Alarm',
+                            value: args.time+''
+                        }]
+                    }
+                };
+            });
             if (!res) {
                 res = 'This is currently a beta feature.';
             }
-        } else res = text;
+        } else res = txt;
         message.channel.send(await res);
+        contexts.push({
+            name: response.result.action,
+            parameters: response.result.parameters
+        });
     });
     request.on('error', (e) => {
         message.channel.stopTyping();
-        if (message.author.id === '359988404316012547') message.reply(e.message);
+        if (message.author.id === '359988404316012547') message.reply(e.message || e);
         else message.channel.send('Oops, there was an error on our end.');
     });
     request.end();
