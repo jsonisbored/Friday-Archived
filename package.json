@@ -2,10 +2,10 @@
   "name": "discord-ai-bot",
   "version": "1.0.0",
   "description": "Discord AI bot",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "rpc": "electron rpc/index.js"
   },
   "repository": {
     "type": "git",
@@ -27,19 +27,27 @@
   "dependencies": {
     "apiai": "^4.0.3",
     "better-sqlite-pool": "^0.2.2",
+    "better-sqlite3": "^5.4.3",
     "city-country-timezone": "^1.0.3",
+    "datejs": "^1.0.0-rc3",
+    "discord-rpc": "^3.1.0",
     "discord.js": "^11.5.1",
     "dotenv": "^8.1.0",
+    "electron": "^6.0.9",
     "enmap": "^5.1.2",
     "express": "^4.17.1",
     "extract-time": "^3.2.3",
+    "mathjs": "^6.2.2",
     "node-cmd": "^3.0.0",
+    "node-gyp": "^5.0.4",
+    "path": "^0.12.7",
     "pm2": "^3.5.1",
     "request": "^2.88.0",
     "sync-glitch-cli": "^2.0.1",
     "timediff": "^1.1.1",
     "timezone-id": "^1.0.13",
-    "timezone-support": "^2.0.2"
+    "timezone-support": "^2.0.2",
+    "url": "^0.11.0"
   },
   "devDependencies": {}
 }

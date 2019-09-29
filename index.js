@@ -1,48 +1,17 @@
 require('dotenv').config();
+require('datejs');
 const apiaiApp = require('apiai')(process.env.AI_TOKEN),
 Discord = require('discord.js'),
-Enmap = require("enmap"),
 client = new Discord.Client(),
 id = require('./restart.json'),
-embedColor = parseInt(process.env.COLOR, 16),
-
-alarms = new Enmap({
-    name: "alarms",
-    fetchAll: false,
-    autoFetch: true,
-    cloneLevel: 'deep'
-});
-client.on('ready', function(evt) {
-    console.log(`Ready to serve on ${client.guilds.size} servers, for ${client.users.size} users.`);
-    client.user.setActivity('Female Replacement Intelligent Digital Assistant Youth');
-    if (id.type == 'dm') client.users.get(id.id).send('Restarted!');
-    else client.channels.find(x => x.id === id.id).send('Restarted!');
-});
+fs = require('fs'),
+db = require('./database.js'),
+alarm = require('./tools/alarm.js');
 
 
-const timediff = require('timediff'),
-tz = require('timezone-id');
-const { listTimeZones, findTimeZone, getZonedTime, getUnixTime } = require('timezone-support'),
-
-formatDate = function(d) {
-    const minutes = d.getMinutes().toString().length == 1 ? '0'+d.getMinutes() : d.getMinutes(),
-    hours = d.getHours().toString().length == 1 ? '0'+d.getHours() : d.getHours(),
-    ampm = d.getHours() >= 12 ? 'PM' : 'AM',
-    months = ['January','February','March','April','May','June','July','August','September','October','November','December'],
-    days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-    return {
-        day: days[d.getDay()],
-        month: months[d.getMonth()],
-        date: d.getDate(),
-        year: d.getFullYear(),
-        hours: hours%12 == 0 ? 12 : hours%12,
-        minutes: minutes,
-        ampm: ampm
-    };
-},
-holidays = { // Values are formatted as month,week,day,*date
+const holidays = { // Values are formatted as month,week,day,*date
     "new year": [0,0,0],
-    "martin luther ling": [0,2,1],
+    "martin luther king": [0,2,1],
     "valentine's day": [1,0,0,13],
     "washington's birthday": [1,2,1],
     "saint patrick's day": [2,0,0,16],
@@ -60,8 +29,31 @@ holidays = { // Values are formatted as month,week,day,*date
     "christmas eve": [11,0,0,23],
     "christmas": [11,0,0,24],
     "new year's eve": [11,-1,6],
-},
-getHoliday = function(args, holiday, year) {
+};
+const { listTimeZones, findTimeZone, getZonedTime, getUnixTime } = require('timezone-support');
+client.color = parseInt(process.env.COLOR, 16);
+client.timediff = require('timediff');
+client.tz = require('timezone-id');
+client.findTimeZone = findTimeZone;
+client.getZonedTime = getZonedTime;
+
+client.formatDate = function(d) {
+    const minutes = d.getMinutes().toString().length == 1 ? '0'+d.getMinutes() : d.getMinutes(),
+    hours = d.getHours().toString().length == 1 ? '0'+d.getHours() : d.getHours(),
+    ampm = d.getHours() >= 12 ? 'PM' : 'AM',
+    months = ['January','February','March','April','May','June','July','August','September','October','November','December'],
+    days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    return {
+        day: days[d.getDay()],
+        month: months[d.getMonth()],
+        date: d.getDate(),
+        year: d.getFullYear(),
+        hours: hours%12 == 0 ? 12 : hours%12,
+        minutes: minutes,
+        ampm: ampm
+    };
+};
+client.getHoliday = function(args, holiday, year) {
     holiday = holidays[holiday.toLowerCase()];
     if (!holiday) return 0;
     year = year || new Date(args.date ? args.date.startDate : Date.now()).getFullYear() || new Date().getFullYear();
@@ -89,8 +81,26 @@ getHoliday = function(args, holiday, year) {
 };
 
 
+client.on('ready', async (evt) => {
+    await db.alarms.defer;
+
+    console.log(`Ready to serve on ${client.guilds.size} servers, for ${client.users.size} users.`);
+    client.user.setActivity('Female Replacement Intelligent Digital Assistant Youth');
+
+    let msg = id.restart ? 'Restarted!' : 'Started!';
+    if (id.type == 'dm') client.users.get(id.id).send(msg);
+    else client.channels.find(x => x.id === id.id).send(msg);
+    id.restart = false;
+    fs.writeFile('restart.json', JSON.stringify(id), err => console.error);
+    
+    alarm.init(client);
+});
+
 let contexts = [{name: '', parameters: {}}];
 client.on('message', message => {
+    let owner = false;
+    if (~['621491278785282059', '359988404316012547'].indexOf(message.author.id)) owner = true;
+
     const prefixes = [`<@${client.user.id}> `, process.env.PREFIX, 'friday', 'ok friday', 'hey friday'];
     if (message.author.bot) return;
     let prefix = false;
@@ -98,14 +108,14 @@ client.on('message', message => {
         if (message.content.toLowerCase().startsWith(i)) prefix = i;
     }
     if (prefix == process.env.PREFIX) {
-        if (~['621491278785282059', '359988404316012547'].indexOf(message.author.id)) {
+        if (owner) {
             try {
                 let args = message.content.slice(prefix.length).trim().split(/ +/g),
                 command = args.shift().toLowerCase(),
                 commandFile = require(`./commands/${command}.js`);
                 commandFile(client, message, args);
             } catch(e) {
-                message.channel.send(e.message);
+                message.channel.send(e.message || e);
             }
         }
         return;
@@ -120,152 +130,18 @@ client.on('message', message => {
     });
     request.on('response', async response => {
         message.channel.stopTyping();
-        let args = response.result.parameters, txt = response.result.fulfillment.speech, res = '';
+        let args = response.result.parameters, txt = response.result.fulfillment.speech, intent = response.result.action;
         if (txt == 'code') {
-            let a = async function(q, value) {
-                if (typeof q != 'object') q = [q];
-                for (let i = 0; i < q.length; i ++) {
-                    if (response.result.action == q[i]) {
-                        res = typeof value == 'function' ? value(q[i]) : value;
-                    }
+            const alias = (cmd, aliases) => {
+                if (~aliases.indexOf(intent) && intent) {
+                    intent = cmd;
                 }
-            };
-            a('date.between', () => {
-                const d1 = formatDate(new Date(args.date1)), d2 = formatDate(new Date(args.date2));
-                return {embed: {
-                    color: embedColor,
-                    fields: [{
-                        name: timediff(args.date1, args.date2, args.unit[0].toUpperCase())[args.unit+'s']+` ${args.unit}s`,
-                        value: `${d1.month} ${d1.date}, ${d1.year} - ${d2.month} ${d2.date}, ${d2.year}`
-                    }]
-                }};
-            });
-            a(['date.check', 'date.day_of_week', 'date.day_of_week.check', 'date.get', 'date.month.check', 'date.month.get', 'date.year.check', 'date.year.get', 'time.time_zones', 'time.get', 'time.check'], async () => {
-                const location = typeof args.location != 'object' ? (args.location || 'Chicago') : (args.location.country || args.location.city || 'Chicago'),
-                id = await tz.getTimeZone(location),
-                zone = findTimeZone(id),
-                d = getZonedTime(new Date(), zone),
-                t = formatDate(new Date(d.year, d.month, d.day, d.hours, d.minutes, d.seconds));
-                return {embed: {
-                    color: embedColor,
-                    title: `Time in ${location}`,
-                    fields: [{
-                        name: `${t.hours}:${t.minutes} ${t.ampm}`,
-                        value: `${t.day}, ${t.month} ${t.date}, ${t.year}`
-                    }]
-                }};
-            });
-            a(['date.holiday', 'date.holiday.check'], () => {
-                const h = getHoliday(args, args.holiday);
-                if (!h) return `Unkown holiday, ${args.holiday}.`;
-                const t = formatDate(h);
-                return {embed: {
-                    color: embedColor,
-                    fields: [{
-                        name: `${t.day}, ${t.month} ${t.date}`,
-                        value: `${args.holiday} ${t.year}`
-                    }]
-                }};
-            });
-            a('date.holiday.between', () => {
-                const h1 = getHoliday(args, args.holiday1),
-                h2 = getHoliday(args, args.holiday2);
-                if (!h1 || !h2) return `Unkown holiday, ${!h1 ? args.holiday1 : args.holiday2}.`;
-                if (h1.getTime() > h1.getTime()) {
-                    let h3 = h1.getTime();
-                    h1 = new Date(h2.getTime());
-                    h2 = new Date(h3.getTime());
-                }
-                let d1 = formatDate(h1), d2 = formatDate(h2);
-                return {embed: {
-                    color: embedColor,
-                    fields: [{
-                        name: Math.abs(timediff(h1, h2, args.unit[0].toUpperCase())[args.unit+'s'])+` ${args.unit}s`,
-                        value: `${d1.month} ${d1.date}, ${d1.year} - ${d2.month} ${d2.date}, ${d2.year}`
-                    }]
-                }};
-            });
-            a('date.holiday.since', () => {
-                let h1 = getHoliday(args, args.holiday),
-                h2 = new Date();
-                if (!h1) return `Unkown holiday, ${args.holiday1}.`;
-                if (h1.getTime() > h2.getTime()) {
-                    h1 = getHoliday(args, args.holiday, new Date().getFullYear()-1);
-                }
-                let d1 = formatDate(h1), d2 = formatDate(h2);
-                return {embed: {
-                    color: embedColor,
-                    fields: [{
-                        name: `${Math.abs(timediff(h2, h1, args.unit[0].toUpperCase())[args.unit+'s'])} ${args.unit}s`,
-                        value: `${d1.month} ${d1.date}, ${d1.year} - ${d2.month} ${d2.date}, ${d2.year}`
-                    }]
-                }};
-            });
-            a('date.holiday.until', () => {
-                let h1 = getHoliday(args, args.holiday),
-                h2 = new Date();
-                if (!h1) return `Unkown holiday, ${args.holiday1}.`;
-                if (h1.getTime() < h2.getTime()) {
-                    h1 = getHoliday(args, args.holiday, new Date().getFullYear()+1);
-                }
-                let d1 = formatDate(h2), d2 = formatDate(h1);
-                return {embed: {
-                    color: embedColor,
-                    fields: [{
-                        name: `${Math.abs(timediff(h2, h1, args.unit[0].toUpperCase())[args.unit+'s'])+1} ${args.unit}s`,
-                        value: `${d1.month} ${d1.date}, ${d1.year} - ${d2.month} ${d2.date}, ${d2.year}`
-                    }]
-                }};
-            });
-            a('date.since', () => {
-                let h1 = new Date(args.date),
-                h2 = new Date();
-                if (h1.getTime() > h2.getTime()) {
-                    h1.setMonth(h1.getMonth() - 12);
-                }
-                let d1 = formatDate(h1), d2 = formatDate(h2);
-                return {embed: {
-                    color: embedColor,
-                    fields: [{
-                        name: `${Math.abs(timediff(h1, h2, args.unit[0].toUpperCase())[args.unit+'s'])} ${args.unit}s`,
-                        value: `${d1.month} ${d1.date+1}, ${d1.year} - ${d2.month} ${d2.date}, ${d2.year}`
-                    }]
-                }};
-            });
-            a('date.until', () => {
-                let h1 = new Date(args.date),
-                h2 = new Date();
-                h1.setDate(h1.getDate()+1);
-                if (h1.getTime() < h2.getTime()) {
-                    h1.setMonth(h1.getMonth() + 12);
-                }
-                let d1 = formatDate(h2), d2 = formatDate(h1);
-                return {embed: {
-                    color: embedColor,
-                    fields: [{
-                        name: `${Math.abs(timediff(h1, h2, args.unit[0].toUpperCase())[args.unit+'s'])} ${args.unit}s`,
-                        value: `${d1.month} ${d1.date}, ${d1.year} - ${d2.month} ${d2.date}, ${d2.year}`
-                    }]
-                }};
-            });
-            a('alarm.set', () => {
-                alarms.set(message.author.id, args);
-                message.channel.send('Created new alarm');
-                return {
-                    embed: {
-                        color: embedColor,
-                        fields: [{
-                            name: args.alarmName+'' || 'Alarm',
-                            value: args.time+''
-                        }]
-                    }
-                };
-            });
-            if (!res) {
-                res = 'This is currently a beta feature.';
             }
-        } else res = txt;
-        message.channel.send(await res);
+            alias('date.check', ['date.day_of_week', 'date.day_of_week.check', 'date.get', 'date.month.check', 'date.month.get', 'date.year.check', 'date.year.get', 'time.time_zones', 'time.get', 'time.check']);
+            alias('date.holiday', 'date.holiday.check');
+            intentFile = require(`./intents/${intent}.js`);
+            intentFile(client, message, args);
+        } else message.channel.send(txt);
         contexts.push({
             name: response.result.action,
             parameters: response.result.parameters
@@ -273,7 +149,7 @@ client.on('message', message => {
     });
     request.on('error', (e) => {
         message.channel.stopTyping();
-        if (message.author.id === '359988404316012547') message.reply(e.message || e);
+        if (owner) message.reply(e.message || e);
         else message.channel.send('Oops, there was an error on our end.');
     });
     request.end();
