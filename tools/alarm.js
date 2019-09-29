@@ -4,16 +4,10 @@ module.exports = {
     init: client => {
         setInterval(() => {
             alarms.forEach((alarm, id) => {
-                let t = alarm.time.split(':'), d = new Date(), now = new Date();
-                if (alarm.date) {
-                    d.setDate(alarm.date);
-                } else {
-                    d.setDate(now.getDate());
-                }
-                d.setFullYear(now.getFullYear());
-                d.setHours(t[0]*1);
-                d.setMinutes(t[1]*1);
-                d.setSeconds(t[2]*1);
+                let t = alarm.time.split(':'), d = new Date(alarm.date || Date.now()), now = new Date();
+                d.addHours(t[0]*1);
+                d.addMinutes(t[1]*1);
+                d.addSeconds(t[2]*1);
 
                 if (now.getTime() >= d.getTime()) {
                     client.users.get(id).send({
