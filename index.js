@@ -1,9 +1,9 @@
 require('dotenv').config();
 require('datejs');
+
 const apiaiApp = require('apiai')(process.env.AI_TOKEN),
 Discord = require('discord.js'),
 client = new Discord.Client(),
-id = require('./restart.json'),
 fs = require('fs'),
 db = require('./database.js'),
 alarm = require('./tools/alarm.js');
@@ -33,7 +33,7 @@ const holidays = { // Values are formatted as month,week,day,*date
 const { listTimeZones, findTimeZone, getZonedTime, getUnixTime } = require('timezone-support');
 client.color = parseInt(process.env.COLOR, 16);
 client.timediff = require('timediff');
-client.tz = require('timezone-id');
+client.cityTimezones = require('city-timezones');
 client.findTimeZone = findTimeZone;
 client.getZonedTime = getZonedTime;
 
@@ -87,12 +87,6 @@ client.on('ready', async (evt) => {
     console.log(`Ready to serve on ${client.guilds.size} servers, for ${client.users.size} users.`);
     client.user.setActivity('Female Replacement Intelligent Digital Assistant Youth');
 
-    let msg = id.restart ? 'Restarted!' : 'Started!';
-    if (id.type == 'dm') client.users.get(id.id).send(msg);
-    else client.channels.find(x => x.id === id.id).send(msg);
-    id.restart = false;
-    fs.writeFile('restart.json', JSON.stringify(id), err => console.error);
-    
     alarm.init(client);
 });
 

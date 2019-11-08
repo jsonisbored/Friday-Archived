@@ -1,6 +1,6 @@
 module.exports = async (client, message, args) => {
     const location = typeof args.location != 'object' ? (args.location || 'Chicago') : (args.location.country || args.location.city || 'Chicago'),
-    id = await client.tz.getTimeZone(location),
+    id = client.cityTimezones.lookupViaCity(location)[0].timezone,
     zone = client.findTimeZone(id),
     d = client.getZonedTime(new Date(), zone),
     t = client.formatDate(new Date(d.year, d.month, d.day, d.hours, d.minutes, d.seconds));

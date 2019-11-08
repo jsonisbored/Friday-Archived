@@ -1,4 +1,4 @@
-document.location.href = 'https://discordapp.com';
+document.location.href = 'https://discordapp.com/channels/@me';
 
 window.details = 'A smart discord bot';
 window.state = 'Working on alarms';

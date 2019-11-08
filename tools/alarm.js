@@ -4,11 +4,8 @@ module.exports = {
     init: client => {
         setInterval(() => {
             alarms.forEach((alarm, id) => {
-                let t = alarm.time.split(':'), d = new Date(alarm.date || Date.now()), now = new Date();
-                d.addHours(t[0]*1);
-                d.addMinutes(t[1]*1);
-                d.addSeconds(t[2]*1);
-
+                let d = new Date(alarm.date).at(alarm.time), now = new Date();
+                
                 if (now.getTime() >= d.getTime()) {
                     client.users.get(id).send({
                         embed: {
