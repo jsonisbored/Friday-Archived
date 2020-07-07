@@ -34,7 +34,7 @@
     "discord-rpc": "^3.1.0",
     "discord.js": "^11.5.1",
     "dotenv": "^8.2.0",
-    "electron": "^6.1.4",
+    "electron": "^7.2.4",
     "enmap": "^5.2.1",
     "express": "^4.17.1",
     "extract-time": "^3.3.0",
