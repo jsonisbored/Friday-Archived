@@ -38,7 +38,7 @@
     "enmap": "^5.2.1",
     "express": "^4.17.1",
     "extract-time": "^3.3.0",
-    "mathjs": "^6.2.3",
+    "mathjs": "^7.5.1",
     "node-cmd": "^3.0.0",
     "node-gyp": "^5.0.5",
     "path": "^0.12.7",
